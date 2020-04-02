@@ -1,15 +1,16 @@
 import numpy as np
 import abc 
+import matplotlib.pyplot as plt
 
 class Imbalance(abc.ABC):
     #mu = |{minority classes}| / no_classes
     #rho = max{|class_i|} / min{|class_i|}
 
-    @staticmethod
+    @abc.abstractmethod
     def get_set_distribution(labels):
         return dict(zip(*np.unique(labels, return_counts=True)))
 
-    @staticmethod
+    @abc.abstractmethod
     def get_set_parameters(labels):
         #returns tuple(no_parameters, mu if step_imbalance detected else None, rho)
         #dictionary.keys() are no instances of a class
@@ -22,23 +23,23 @@ class Imbalance(abc.ABC):
         rho = max(dictionary.keys()) / min(dictionary.keys())
         return (mu, rho)
 
-    @staticmethod
+    @abc.abstractmethod
     def change_set_statistics(images: np.ndarray, labels: np.ndarray, mu, rho):
         #check tensor dimensions
         if images.shape[0] != labels.shape[0]:
             raise IndexError('tensor dimensions are not matching')
         #check parameter values
-        if mu is not None and mu <= 0:
-            raise ValueError('mu is positive real number')
+        if mu is not None and (mu <= 0 or mu >= 1):
+            raise ValueError('mu is a real number in range (0; 1)')
         if rho <= 0:
-            raise ValueError('rho is posive real number')
+            raise ValueError('rho is a posive real number')
         array_dict = dict()
         #set majority class size to the minimal avaliable class size
         majority_size = np.min(np.unique(labels, return_counts=True)[1])
         #extract every class from the images array, make it an array, shuffle it, 
         #and shorten in length such that len(every class) == majority_size
         for i in np.unique(labels):
-            array_dict[i] = train_images[np.where(train_labels == i)]
+            array_dict[i] = images[np.where(labels == i)]
             np.random.shuffle(array_dict[i])
             array_dict[i] = array_dict[i][:majority_size]
         #set minority class size
@@ -108,3 +109,22 @@ class Imbalance(abc.ABC):
         out_images = out_images[permutation]
         out_labels = out_labels[permutation]
         return (out_images, out_labels)
+
+    @abc.abstractmethod
+    def plot_set_distribution(images: np.ndarray, labels: np.ndarray):
+        dictionary = Imbalance.get_set_distribution(labels)
+        params = Imbalance.get_set_parameters(labels)
+        if Imbalance.get_set_parameters(labels)[0] is not None:
+            plt.bar(dictionary.keys(), dictionary.values())
+            plt.show()
+            print(f'mu = {params[0]}, rho = {params[1]}')
+        else:
+            print('sorted')
+            (x, y) = (list(range(len(dictionary))), list(dictionary.values()))
+            y.sort()
+            plt.bar(x, y)
+            plt.show()
+            print('real')
+            plt.bar(dictionary.keys(), dictionary.values())
+            plt.show()
+            print(f'rho = {params[1]}')
