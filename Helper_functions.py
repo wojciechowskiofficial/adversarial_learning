@@ -28,8 +28,10 @@ class Imbalance(abc.ABC):
         if images.shape[0] != labels.shape[0]:
             raise IndexError('tensor dimensions are not matching')
         #check parameter values
-        if mu <= 0 or rho <= 0:
-            raise ValueError('mu and rho are posive real numbers')
+        if mu is not None and mu <= 0:
+            raise ValueError('mu is positive real number')
+        if rho <= 0:
+            raise ValueError('rho is posive real number')
         array_dict = dict()
         #set majority class size to the minimal avaliable class size
         majority_size = np.min(np.unique(labels, return_counts=True)[1])
