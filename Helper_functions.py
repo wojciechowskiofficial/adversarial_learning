@@ -1,6 +1,7 @@
 import numpy as np
 import abc 
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 class Imbalance(abc.ABC):
     #mu = |{minority classes}| / no_classes
@@ -31,8 +32,8 @@ class Imbalance(abc.ABC):
         #check parameter values
         if mu is not None and (mu <= 0 or mu >= 1):
             raise ValueError('mu is a real number in range (0; 1)')
-        if rho <= 0:
-            raise ValueError('rho is a posive real number')
+        if rho < 1:
+            raise ValueError('rho is a greater or equal than 1 real number')
         array_dict = dict()
         #set majority class size to the minimal avaliable class size
         majority_size = np.min(np.unique(labels, return_counts=True)[1])
@@ -128,3 +129,16 @@ class Imbalance(abc.ABC):
             plt.bar(dictionary.keys(), dictionary.values())
             plt.show()
             print(f'rho = {params[1]}')
+
+class Adversarial(abc.ABC):
+    @abc.abstractmethod
+    def create_adversarial_masks(images, labels, loss_object, model):
+        if images.shape[0] != labels.shape[0]:
+            raise IndexError('tensor dimensions are not matching')
+        model.trainable = False
+        with tf.GradientTape() as tape:
+            tape.watch(images)
+            pred = model(images)
+            loss = loss_object(labels, pred)
+        signed_grad = tf.sign(tape.gradient(loss, images))
+        return signed_grad
