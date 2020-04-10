@@ -2,6 +2,7 @@ import numpy as np
 import abc 
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import tqdm
 
 class Imbalance(abc.ABC):
     #mu = |{minority classes}| / no_classes
@@ -142,3 +143,24 @@ class Adversarial(abc.ABC):
             loss = loss_object(labels, pred)
         signed_grad = tf.sign(tape.gradient(loss, images))
         return signed_grad
+    
+    @abc.abstractmethod
+    def apply_masks(images, masks, epsilon):
+        return tf.clip_by_value(images + epsilon * masks, 0, 1)
+
+    @abc.abstractmethod
+    def plot_epsilon_effectiveness(images, labels, loss_object, model, epsilons):
+        def binary_diff():
+            count = 0
+            for i in np.arange(images.shape[0]):
+                if np.argmax(predictions[i]) != np.argmax(adversarial_predictions[i]):
+                    count += 1
+            return count / images.shape[0]
+        masks = Adversarial.create_adversarial_masks(images, labels, loss_object, model)
+        output = dict()
+        predictions = model.predict(images)
+        for e in tqdm.tqdm(epsilons):
+            adversarial_images = Adversarial.apply_masks(images, masks, e)
+            adversarial_predictions = model.predict(adversarial_images)
+            output[e] = binary_diff()
+        plt.plot(list(output.keys()), list(output.values()))
