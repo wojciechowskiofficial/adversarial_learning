@@ -182,11 +182,14 @@ class MultiLabelMetrics():
         self.cm = self.cm.result().numpy()
         recall = self.cm[:,1,1] / (self.cm[:,1,1] + self.cm[:,1,0])
         precision = self.cm[:,1,1] / (self.cm[:,1,1] + self.cm[:,0,1])
-        fscore = 1.0 / (1 / (2 * precision) * 1 / (2 * recall))
+        fscore = 2.0 * (precision * recall) / (precision + recall)
         tnrate = self.cm[:,0,0] / (self.cm[:,0,0] + self.cm[:,0,1])
-        gmean = np.sqrt(precision * tnrate)
+        gmean = 1
+        for el in recall:
+            gmean *= el
+        gmean = gmean ** (1 / self.num_classes)
         self.metrics['recall'] = np.mean(recall)
         self.metrics['precision'] = np.mean(precision)
         self.metrics['fscore'] = np.mean(fscore)
         self.metrics['tnrate'] = np.mean(tnrate)
-        self.metrics['gmean'] = np.mean(gmean)
+        self.metrics['gmean'] = np.float32(gmean)
