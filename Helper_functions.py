@@ -3,7 +3,6 @@ import abc
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import tqdm
-#import tensorflow_addons as tfa
 
 class Imbalance(abc.ABC):
     #mu = |{minority classes}| / no_classes
@@ -166,30 +165,3 @@ class Adversarial(abc.ABC):
             adversarial_predictions = model.predict(adversarial_images)
             output[e] = binary_diff()
         plt.plot(list(output.keys()), list(output.values()))
-
-#manual:
-#   -instantiate class outside of the model.compile and assign to smome object X
-#   -pass X.cm to models metrics
-#   -after training run X.get_metrics() method
-#   -access multiclass metrics through X.metrics: dict()
-class MultiLabelMetrics():
-    def __init__(self, num_classes):
-        #multi label confusion matrix as self.cm
-        self.cm = tfa.metrics.MultiLabelConfusionMatrix(num_classes = num_classes)
-        self.num_classes = num_classes
-        self.metrics = dict()
-    def get_metrics(self):
-        self.cm = self.cm.result().numpy()
-        recall = self.cm[:,1,1] / (self.cm[:,1,1] + self.cm[:,1,0])
-        precision = self.cm[:,1,1] / (self.cm[:,1,1] + self.cm[:,0,1])
-        fscore = 2.0 * (precision * recall) / (precision + recall)
-        tnrate = self.cm[:,0,0] / (self.cm[:,0,0] + self.cm[:,0,1])
-        gmean = 1
-        for el in recall:
-            gmean *= el
-        gmean = gmean ** (1 / self.num_classes)
-        self.metrics['recall'] = np.mean(recall)
-        self.metrics['precision'] = np.mean(precision)
-        self.metrics['fscore'] = np.mean(fscore)
-        self.metrics['tnrate'] = np.mean(tnrate)
-        self.metrics['gmean'] = np.float32(gmean)
