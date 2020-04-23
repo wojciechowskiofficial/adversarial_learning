@@ -165,3 +165,71 @@ class Adversarial(abc.ABC):
             adversarial_predictions = model.predict(adversarial_images)
             output[e] = binary_diff()
         plt.plot(list(output.keys()), list(output.values()))
+
+    #takes numpy returns tensor!
+    @abc.abstractmethod
+    def oversample(images, labels, loss_object, model, eps, data_type = None):
+        if data_type is None:
+            raise AttributeError('specify imbalance type {"step"; "linear"}')
+        elif data_type == 'step':
+            distribution = Imbalance.get_set_distribution(labels)
+            sorted_labels = [k for (k,_) in sorted(distribution.items(), key = lambda x:x[1])]
+            tmp = distribution[sorted_labels[0]]
+            minority_no = 0
+            for k in sorted_labels:
+                if distribution[k] == tmp:
+                    minority_no += 1
+                else:
+                    break
+            minority_size = distribution[sorted_labels[0]]
+            majority_size = distribution[sorted_labels[-1]]
+            labels_to_oversample = sorted_labels[:minority_no]
+            for label in labels_to_oversample:
+                current_images = tf.cast(images[np.where(labels == label)], dtype = tf.float32) / 255.0
+                current_labels = labels[np.where(labels == label)]
+                masks = Adversarial.create_adversarial_masks(current_images, current_labels, loss_object, model).numpy()
+                current_images = current_images.numpy()
+                current_len = current_images.shape[0]
+                masked_images = np.empty(shape = tuple(current_images.shape[i] if i != 0
+                                                else majority_size - minority_size
+                                                for i in range(len(current_images.shape))), 
+                                  dtype = np.float32)
+                masked_labels = np.full(shape = tuple(current_labels.shape[i] if i != 0
+                                                else majority_size - minority_size
+                                                for i in range(len(current_labels.shape))), 
+                                     fill_value = label, 
+                                     dtype = np.int32)
+                i = 0
+                while i < majority_size - minority_size:
+                    masked_images[i] = np.clip(current_images[i % current_len] + np.random.choice(eps) * masks[i % current_len], 0, 1)
+                    i += 1
+                images = np.concatenate((images, masked_images))
+                labels = np.concatenate((labels, masked_labels))
+        permutation = np.random.permutation(np.arange(images.shape[0]))
+        out_images = images[permutation]
+        out_labels = labels[permutation]
+        return (out_images, out_labels)
+
+
+
+
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
