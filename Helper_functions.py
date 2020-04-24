@@ -185,7 +185,7 @@ class Adversarial(abc.ABC):
             majority_size = distribution[sorted_labels[-1]]
             labels_to_oversample = sorted_labels[:minority_no]
             for label in labels_to_oversample:
-                current_images = tf.cast(images[np.where(labels == label)], dtype = tf.float32) / 255.0
+                current_images = tf.math.truediv(tf.cast(images[np.where(labels == label)], dtype = tf.float32), 255.0)
                 current_labels = labels[np.where(labels == label)]
                 masks = Adversarial.create_adversarial_masks(current_images, current_labels, loss_object, model).numpy()
                 current_images = current_images.numpy()
@@ -209,27 +209,3 @@ class Adversarial(abc.ABC):
         out_images = images[permutation]
         out_labels = labels[permutation]
         return (out_images, out_labels)
-
-
-
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
