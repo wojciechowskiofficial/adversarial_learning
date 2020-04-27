@@ -172,6 +172,7 @@ class Adversarial(abc.ABC):
         if data_type is None:
             raise AttributeError('specify imbalance type {"step"; "linear"}')
         elif data_type == 'step':
+            images = np.true_divide(images, 255.0)
             distribution = Imbalance.get_set_distribution(labels)
             sorted_labels = [k for (k,_) in sorted(distribution.items(), key = lambda x:x[1])]
             tmp = distribution[sorted_labels[0]]
@@ -185,7 +186,7 @@ class Adversarial(abc.ABC):
             majority_size = distribution[sorted_labels[-1]]
             labels_to_oversample = sorted_labels[:minority_no]
             for label in labels_to_oversample:
-                current_images = tf.math.truediv(tf.cast(images[np.where(labels == label)], dtype = tf.float32), 255.0)
+                current_images = tf.cast(images[np.where(labels == label)], dtype = tf.float32)
                 current_labels = labels[np.where(labels == label)]
                 masks = Adversarial.create_adversarial_masks(current_images, current_labels, loss_object, model).numpy()
                 current_images = current_images.numpy()
@@ -208,4 +209,4 @@ class Adversarial(abc.ABC):
         permutation = np.random.permutation(np.arange(images.shape[0]))
         out_images = images[permutation]
         out_labels = labels[permutation]
-        return (out_images, out_labels)
+        return (out_images * 255.0, out_labels)
